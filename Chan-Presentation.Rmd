@@ -1,0 +1,133 @@
+---
+title: "Chan-Presentation"
+author: "Vic Chan"
+date: "5/14/2021"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(tidyverse)
+library(GGally)
+```
+
+```{r importing the data, echo=FALSE}
+# load data
+dataset = read.csv('https://www.fueleconomy.gov/feg/epadata/vehicles.csv')
+
+# Filtering out all options that are unnecessary
+
+dataset = dataset %>%
+  filter(fuelType == 'Regular' |  fuelType == 'Premium' | fuelType == 'Midgrade') %>%
+  select(city08, highway08, cylinders, displ, drive, fuelType, make, model, year, trany)
+```
+
+# Gas Vehicle Fuel Efficency
+
+## Dataset
+- Data is from United States Department of Energy and the Environmental Protection Agency
+- The dataset contains all the car manufactures makes and models that are sold in the US
+- This dataset is constantly being updated with new makes and models and contains over 43,000 different types of makes and models from 1984 to 2021. 
+- The dataset includes a data dictionary that can be found on the [United States of Energy Fuel Economy](https://www.fueleconomy.gov/feg/ws/index.shtml#vehicle)
+- In the dataset we will be strictly looking at only gas engine cars and will be filtering out hybrids, diesel, and electric cars. 
+
+## Question
+
+Has fuel economy peaked throughout the years. 
+
+- Increase fuel economy regulations from the EPA and government
+- Improvement in gas engine technology
+- Improvement to aero dynamics of vehicles.
+
+## Looking at the data
+
+Can see a positive trend and see that the minimum MPG has been increasing throughout the years, but has MPG peaked ?
+
+```{r, echo=FALSE}
+dataset %>%
+  ggplot(aes(x=year, y=highway08)) + geom_point() + geom_jitter() + ylab('Highway MPG')
+```
+
+## Loess Regression
+
+- Loess Regression is a smoothing technique which uses the local weights of each value in order to create a regression line
+- The Loess Regression relies on different span sizes in order to get different levels of smoothing
+
+![](https://rafalab.github.io/dsbook/ml/img/loess-multi-span-animation.gif)
+
+
+## Loess Regression Highway Fuel Economy
+
+```{r, echo=FALSE, include=FALSE}
+m1 = loess(highway08 ~ year, data=dataset, span=0.05)
+m2 = loess(highway08 ~ year, data=dataset, span=0.15)
+m3 = loess(highway08 ~ year, data=dataset, span=0.50)
+```
+
+```{r, echo=FALSE}
+ggplot(data=dataset, aes(x=year, y=m1$fitted)) + geom_line(color='RED') + geom_line(aes(x=year, y=m2$fitted), color='BLUE') + geom_line(aes(x=year, y=m3$fitted), color='GREEN') + ylab('Highway MPG')
+```
+
+## Loess Regression City Fuel Economy
+
+```{r, echo=FALSE, include=FALSE}
+m4 = loess(city08 ~ year, data=dataset, span=0.05)
+m5 = loess(city08 ~ year, data=dataset, span=0.15)
+m6 = loess(city08 ~ year, data=dataset, span=0.50)
+```
+
+```{r, echo=FALSE}
+ggplot(data=dataset, aes(x=year, y=m4$fitted)) + geom_line(color='RED') + geom_line(aes(x=year, y=m5$fitted), color='BLUE') + geom_line(aes(x=year, y=m6$fitted), color='GREEN') + ylab('City MPG')
+```
+
+## Loess Regression Fuel Economy
+
+```{r, echo=FALSE}
+ggplot(data=dataset, aes(x=year)) + geom_line(aes(y=m3$fitted), color='GREEN') + geom_line(aes(y=m6$fitted), color='BLUE') + ylab('MPG')
+```
+
+## GGPairs
+
+```{r, echo=FALSE, message=FALSE, error=FALSE, warning=FALSE}
+dataset %>%
+  select('city08', 'highway08', 'cylinders', 'displ', 'fuelType', 'year') %>%
+  ggpairs()
+```
+
+## Linar Regression: City Fuel Economy
+
+```{r, echo=FALSE}
+m7 = lm(city08 ~ cylinders + displ, data = dataset)
+summary(m7)
+```
+
+## Linear Regression: City Fuel Economy
+
+```{r, echo=FALSE}
+par(mfrow = c(2,2))
+plot(m7)
+```
+
+## Linear Regression: Highway Fuel Economy
+
+```{r, echo=FALSE}
+m8 = lm(highway08 ~ cylinders + displ, data = dataset)
+summary(m8)
+```
+
+## Linear Regression: Highway Fuel Economy
+```{r, echo=FALSE}
+par(mfrow = c(2,2))
+plot(m8)
+```
+
+## Conclusion
+
+- Fuel economy is affected by the economy which also effects gas prices and consumer spending
+- Fuel economy ias indeed plateaued in recent years due to consumers buying more SUVs
+  + Auto manufactures like Ford and General Motors are no longer making any more sedans
+- Would like to see how COVID and the recession will impact the fuel economy
+
